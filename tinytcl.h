@@ -112,6 +112,33 @@ struct tcl_parser {
 /* ------------------------------------------------------- */
 typedef char tcl_value_t;
 
+typedef tcl_result_t (*tcl_cmd_fn_t)(struct tcl *, tcl_value_t *, void *);
+
+struct tcl_cmd {
+    tcl_value_t *name;
+    int arity;
+    tcl_cmd_fn_t fn;
+    void *arg;
+    struct tcl_cmd *next;
+};
+
+struct tcl_var {
+    tcl_value_t *name;
+    tcl_value_t *value;
+    struct tcl_var *next;
+};
+
+struct tcl_env {
+    struct tcl_var *vars;
+    struct tcl_env *parent;
+};
+
+struct tcl {
+    struct tcl_env *env;
+    struct tcl_cmd *cmds;
+    tcl_value_t *result;
+};
+
 const char *tcl_string(tcl_value_t *v) { return v; }
 int tcl_int(tcl_value_t *v) { return atoi(v); }
 int tcl_length(tcl_value_t *v) { return v == NULL ? 0 : strlen(v); }
@@ -201,27 +228,6 @@ tcl_value_t *tcl_list_append(tcl_value_t *v, tcl_value_t *tail) {
 /* ----------------------------- */
 /* ----------------------------- */
 
-typedef tcl_result_t (*tcl_cmd_fn_t)(struct tcl *, tcl_value_t *, void *);
-
-struct tcl_cmd {
-    tcl_value_t *name;
-    int arity;
-    tcl_cmd_fn_t fn;
-    void *arg;
-    struct tcl_cmd *next;
-};
-
-struct tcl_var {
-    tcl_value_t *name;
-    tcl_value_t *value;
-    struct tcl_var *next;
-};
-
-struct tcl_env {
-    struct tcl_var *vars;
-    struct tcl_env *parent;
-};
-
 static struct tcl_env *tcl_env_alloc(struct tcl_env *parent) {
     struct tcl_env *env = malloc(sizeof(*env));
     env->vars = NULL;
@@ -250,12 +256,6 @@ static struct tcl_env *tcl_env_free(struct tcl_env *env) {
     free(env);
     return parent;
 }
-
-struct tcl {
-    struct tcl_env *env;
-    struct tcl_cmd *cmds;
-    tcl_value_t *result;
-};
 
 tcl_value_t *tcl_var(struct tcl *tcl, tcl_value_t *name, tcl_value_t *v) {
     struct tcl_var *var;
