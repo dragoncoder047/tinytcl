@@ -321,8 +321,7 @@ tcl_result_t tcl_eval(struct tcl *tcl, const char *s, size_t len) {
 /* --------------------------------- */
 /* --------------------------------- */
 /* --------------------------------- */
-void tcl_register(struct tcl *tcl, const char *name, tcl_cmd_fn_t fn, int arity,
-                                    void *arg) {
+void tcl_register(struct tcl *tcl, const char *name, tcl_cmd_fn_t fn, int arity, void *arg) {
     struct tcl_cmd *cmd = malloc(sizeof(struct tcl_cmd));
     cmd->name = tcl_alloc(name, strlen(name));
     cmd->fn = fn;
@@ -498,12 +497,11 @@ static tcl_result_t tcl_cmd_math(struct tcl *tcl, tcl_value_t *args, void *arg) 
     } else if (op[0] == '!' && op[1] == '=') {
         c = a != b;
     }
-    char *p = buf + sizeof(buf) - 1;
-    sprintf(p, "%d", c);
+    sprintf(buf, "%d", c);
     tcl_free(opval);
     tcl_free(aval);
     tcl_free(bval);
-    return tcl_result(tcl, TCL_OK, tcl_alloc(p, strlen(p)));
+    return tcl_result(tcl, TCL_OK, tcl_alloc(buf, strlen(buf)));
 }
 #endif
 

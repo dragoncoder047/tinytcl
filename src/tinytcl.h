@@ -96,9 +96,7 @@ struct tcl {
 tcl_value_t *tcl_var(struct tcl *tcl, tcl_value_t *name, tcl_value_t *v);
 
 tcl_result_t tcl_result(struct tcl *tcl, tcl_result_t flow, tcl_value_t *result);
-
 tcl_result_t tcl_subst(struct tcl *tcl, const char *s, size_t len);
-
 tcl_result_t tcl_eval(struct tcl *tcl, const char *s, size_t len);
 
 /* --------------------------------- */
