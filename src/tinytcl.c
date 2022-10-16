@@ -266,6 +266,7 @@ tcl_result_t tcl_eval(struct tcl *tcl, const char *s, size_t len) {
     tcl_each(s, len, 1) {
         switch (p.token) {
             case TOK_ERROR:
+                tcl_list_free(list); tcl_free(cur);
                 return tcl_result(tcl, TCL_ERROR, tcl_alloc("", 0));
             case TOK_WORD:
                 if (cur != NULL) {

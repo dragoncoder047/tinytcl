@@ -2,7 +2,6 @@
 
 #include <stdio.h>
 #include <string.h>
-#include "tinytcl.c"
 
 #define MAX_VAR_LENGTH 256
 
@@ -130,3 +129,5 @@ static tcl_result_t tcl_cmd_math(struct tcl *tcl, tcl_value_t *args, void *arg);
 void tcl_init(struct tcl *tcl);
 
 void tcl_destroy(struct tcl *tcl);
+
+#include "tinytcl.c"
