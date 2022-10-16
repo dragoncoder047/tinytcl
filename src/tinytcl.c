@@ -16,8 +16,6 @@ tcl_token tcl_next(const char *s, size_t n, const char **from, const char **to, 
     char open;
     char close;
 
-    DBG("tcl_next(%.*s)+%d+%d|%d\n", n, s, *from - s, *to - s, *q);
-
     /* Skip leading spaces if not quoted */
     for (; !*q && n > 0 && tcl_is_space(*s); s++, n--) {
     }
@@ -210,7 +208,6 @@ struct tcl {
 };
 
 tcl_value_t *tcl_var(struct tcl *tcl, tcl_value_t *name, tcl_value_t *v) {
-    DBG("var(%s := %.*s)\n", tcl_string(name), tcl_length(v), tcl_string(v));
     struct tcl_var *var;
     for (var = tcl->env->vars; var != NULL; var = var->next) {
         if (strcmp(var->name, tcl_string(name)) == 0) {
@@ -229,15 +226,12 @@ tcl_value_t *tcl_var(struct tcl *tcl, tcl_value_t *name, tcl_value_t *v) {
 }
 
 tcl_result_t tcl_result(struct tcl *tcl, tcl_result_t flow, tcl_value_t *result) {
-    DBG("tcl_result %.*s, flow=%d\n", tcl_length(result), tcl_string(result),
-            flow);
     tcl_free(tcl->result);
     tcl->result = result;
     return flow;
 }
 
 tcl_result_t tcl_subst(struct tcl *tcl, const char *s, size_t len) {
-    DBG("subst(%.*s)\n", (int)len, s);
     if (len == 0) {
         return tcl_result(tcl, TCL_OK, tcl_alloc("", 0));
     }
@@ -267,18 +261,13 @@ tcl_result_t tcl_subst(struct tcl *tcl, const char *s, size_t len) {
 }
 
 tcl_result_t tcl_eval(struct tcl *tcl, const char *s, size_t len) {
-    DBG("eval(%.*s)->\n", (int)len, s);
     tcl_value_t *list = tcl_list_alloc();
     tcl_value_t *cur = NULL;
     tcl_each(s, len, 1) {
-        DBG("tcl_next %d %.*s\n", p.token, (int)(p.to - p.from), p.from);
         switch (p.token) {
             case TOK_ERROR:
-                DBG("eval: TCL_ERROR, lexer error\n");
                 return tcl_result(tcl, TCL_ERROR, tcl_alloc("", 0));
             case TOK_WORD:
-                DBG("token %.*s, length=%d, cur=%p (3.1.1)\n", (int)(p.to - p.from),
-                        p.from, (int)(p.to - p.from), cur);
                 if (cur != NULL) {
                     tcl_subst(tcl, p.from, p.to - p.from);
                     tcl_value_t *part = tcl_dup(tcl->result);
