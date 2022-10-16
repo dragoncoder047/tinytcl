@@ -1,30 +1,12 @@
-#include <stdlib.h>
+#include "tinytcl.h"
 
-#include <stdio.h>
-#include <string.h>
-
-#if 0
-#define DBG printf
-#else
-#define DBG(...)
-#endif
-
-#define MAX_VAR_LENGTH 256
-
-/* Token type and control flow constants */
-enum tcl_token { TOK_COMMAND, TOK_WORD, TOK_PART, TOK_ERROR };
-enum tcl_result_t { TCL_ERROR, TCL_OK, TCL_RETURN, TCL_BREAK, TCL_AGAIN };
-
-struct tcl;
-tcl_result_t tcl_eval(struct tcl *tcl, const char *s, size_t len);
-
-static int tcl_is_special(char c, int q) {
+static bool tcl_is_special(char c, int q) {
     return c == '$' || (!q && (c == '{' || c == '}' || c == ';' || c == '\r' || c == '\n')) || c == '[' || c == ']' || c == '"' || c == '\0';
 }
 
-static int tcl_is_space(char c) { return c == ' ' || c == '\t'; }
+static bool tcl_is_space(char c) { return c == ' ' || c == '\t'; }
 
-static int tcl_is_end(char c) {
+static bool tcl_is_end(char c) {
     return c == '\n' || c == '\r' || c == ';' || c == '\0';
 }
 
@@ -96,29 +78,12 @@ tcl_token tcl_next(const char *s, size_t n, const char **from, const char **to, 
     return (tcl_is_space(s[i]) || tcl_is_end(s[i])) ? TOK_WORD : TOK_PART;
 }
 
-/* A helper parser struct and macro (requires C99) */
-struct tcl_parser {
-    const char *from;
-    const char *to;
-    const char *start;
-    const char *end;
-    int q;
-    tcl_token token;
-};
-#define tcl_each(s, len, skiperr)                                              \
-    for (struct tcl_parser p = {NULL, NULL, (s), (s) + (len), 0, TOK_ERROR};   \
-         p.start < p.end &&                                                    \
-         (((p.token = tcl_next(p.start, p.end - p.start, &p.from, &p.to,       \
-            &p.q)) != TOK_ERROR) ||                                            \
-            (skiperr));                                                        \
-        p.start = p.to)
 
 /* ------------------------------------------------------- */
 /* ------------------------------------------------------- */
 /* ------------------------------------------------------- */
 /* ------------------------------------------------------- */
 /* ------------------------------------------------------- */
-typedef char tcl_value_t;
 
 const char *tcl_string(tcl_value_t *v) { return v; }
 int tcl_int(tcl_value_t *v) { return atoi(v); }
@@ -208,27 +173,6 @@ tcl_value_t *tcl_list_append(tcl_value_t *v, tcl_value_t *tail) {
 /* ----------------------------- */
 /* ----------------------------- */
 /* ----------------------------- */
-
-typedef tcl_result_t (*tcl_cmd_fn_t)(struct tcl *, tcl_value_t *, void *);
-
-struct tcl_cmd {
-    tcl_value_t *name;
-    int arity;
-    tcl_cmd_fn_t fn;
-    void *arg;
-    struct tcl_cmd *next;
-};
-
-struct tcl_var {
-    tcl_value_t *name;
-    tcl_value_t *value;
-    struct tcl_var *next;
-};
-
-struct tcl_env {
-    struct tcl_var *vars;
-    struct tcl_env *parent;
-};
 
 static struct tcl_env *tcl_env_alloc(struct tcl_env *parent) {
     struct tcl_env *env = malloc(sizeof(*env));
@@ -610,7 +554,7 @@ void tcl_destroy(struct tcl *tcl) {
     tcl_free(tcl->result);
 }
 
-#ifndef TEST
+#if 0
 #define CHUNK 1024
 
 int main() {
