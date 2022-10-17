@@ -1,5 +1,6 @@
 #include "tinytcl.h"
 #include <Arduino.h>
+#include <Print.h>
 #include <SPI.h>
 #include <SD.h>
 
@@ -9,6 +10,19 @@ Serial port: 0x11 + port number
 SPI port:    0x12
 
 */
+
+static Print *serials = {
+    Serial,
+#ifdef Serial1
+    Serial1,
+#endif
+#ifdef Serial1
+    Serial2,
+#endif
+#ifdef Serial1
+    Serial3,
+#endif
+}
 
 static tcl_result_t tcl_cmd_puts(struct tcl *tcl, tcl_value_t *args, void *arg) {
     (void)arg;
@@ -37,14 +51,9 @@ static tcl_result_t tcl_cmd_puts(struct tcl *tcl, tcl_value_t *args, void *arg) 
         portnum = text[1] - '0';
         tcl_free(text);
         text = tcl_list_at(args, i + 1);
-        if (portnum == 1) {
-            if (newline) Serial1.println(tcl_string(text));
-            else Serial1.print(tcl_string(text));
-        }
-        else { // portnum == 0
-            if (newline) Serial.println(tcl_string(text));
-            else Serial.print(tcl_string(text));
-        }
+        Print *port = serials[portnum];
+        if (newline) port->println(tcl_string(text));
+        else port->print(tcl_string(text));
     }
     else if (text[0] == 0x12) { // ASCII Device Control 2 ==> SPI port
         tcl_free(text);
@@ -57,6 +66,44 @@ static tcl_result_t tcl_cmd_puts(struct tcl *tcl, tcl_value_t *args, void *arg) 
         else Serial.print(tcl_string(text));
     }
     tcl_free(text);
+    return tcl_result(tcl, TCL_OK, text);
+}
+
+static tcl_result_t tcl_cmd_read(struct tcl *tcl, tcl_value_t *args, void *arg) {
+    (void)arg;
+    tcl_value_t *fd;
+    tcl_value_t *text;
+    uintptr_t fp;
+    int portnum = 0;
+    File f;
+    int a;
+    fd = tcl_list_at(args, 1);
+    if (fd[0] == 0x1C) { // ASCII file separator ==> file pointer
+        fp = (uintptr_t)*(fd + 1);
+        f = (File)*fp; // pointers
+        a = f.available();
+        text = tcl_alloc("", a);
+        f.read(text, a);
+    }
+    else if (fd[0] == 0x11) { // ASCII Device Control 1 ==> serial port
+        portnum = fd[1] - '0';
+        Print *port = serials[portnum];
+        a = port->available();
+        text = tcl_alloc("", a);
+        port->readBytes(text, a);
+    }
+    else if (fd[0] == 0x12) { // ASCII Device Control 2 ==> SPI port
+        tcl_value_t *amount = tcl_list_at(args, 2);
+        a = (int)tcl_num(amount);
+        text = tcl_alloc("", a);
+        SPI.transfer((char *)text, a);
+    }
+    else {
+        // default to serial
+        if (newline) Serial.println(tcl_string(fd));
+        else Serial.print(tcl_string(fd));
+    }
+    tcl_free(fd);
     return tcl_result(tcl, TCL_OK, text);
 }
 
@@ -80,6 +127,28 @@ static tcl_result_t tcl_cmd_open(struct tcl *tcl, tcl_value_t *args, void *arg) 
         tcl_free(filename);
         return tcl_result(tcl, TCL_OK, tcl_alloc("\x11\x31", 2)); // \x31 is ASCII '1'
     }
+#ifdef Serial2
+    if (strcmp(filename, "/dev/serial2") == 0) {
+        tcl_value_t *bauds = tcl_list_at(args, 2);
+        int baud = (int)tcl_num(bauds);
+        if (baud == 0) baud = 9600;
+        Serial2.begin(baud);
+        tcl_free(bauds);
+        tcl_free(filename);
+        return tcl_result(tcl, TCL_OK, tcl_alloc("\x11\x32", 2)); // \x32 is ASCII '2'
+    }
+#endif
+#ifdef Serial3
+    if (strcmp(filename, "/dev/serial3") == 0) {
+        tcl_value_t *bauds = tcl_list_at(args, 2);
+        int baud = (int)tcl_num(bauds);
+        if (baud == 0) baud = 9600;
+        Serial3.begin(baud);
+        tcl_free(bauds);
+        tcl_free(filename);
+        return tcl_result(tcl, TCL_OK, tcl_alloc("\x11\x33", 2)); // \x33 is ASCII '3'
+    }
+#endif
     if (strcmp(filename, "/dev/spi") == 0) {
         SPI.begin();
         tcl_free(filename);
@@ -123,4 +192,5 @@ void tcl_init_io(struct tcl *tcl) {
     tcl_register(tcl, "puts", tcl_cmd_puts, 0);
     tcl_register(tcl, "open", tcl_cmd_open, 0);
     tcl_register(tcl, "close", tcl_cmd_close, 2);
+    tcl_register(tcl, "read", tcl_cmd_read, 0);
 }

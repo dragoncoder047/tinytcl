@@ -43,6 +43,9 @@ open stream ?details?
 # other files on SD card -- take "r" for read and "w" for write
 puts ?-nonewline? ?stream? string
 # if no stream specified uses /dev/serial (which is default serial port)
+read stream ?amount?
+# read ALL available bytes from specified stream
+# for SPI available is unknown, so amount is required
 close stream
 # closing a serial port is a noop
 ```
