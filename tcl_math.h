@@ -1,3 +1,5 @@
+#include "tinytcl.h"
+
 static tcl_result_t tcl_cmd_math(struct tcl *tcl, tcl_value_t *args, void *arg) {
     (void)arg;
     char buf[64];

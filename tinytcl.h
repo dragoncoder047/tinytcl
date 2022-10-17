@@ -1,13 +1,15 @@
 #include <stdlib.h>
-
 #include <stdio.h>
 #include <string.h>
+
+#ifndef TCL_H
+#define TCL_H
 
 #define MAX_VAR_LENGTH 256
 
 /* Token type and control flow constants */
 enum tcl_token { TOK_COMMAND, TOK_WORD, TOK_PART, TOK_ERROR };
-enum tcl_result_t { TCL_ERROR, TCL_OK, TCL_RETURN, TCL_BREAK, TCL_AGAIN };
+enum tcl_result_t { TCL_OK, TCL_ERROR, TCL_RETURN, TCL_BREAK, TCL_AGAIN };
 
 struct tcl;
 tcl_result_t tcl_eval(struct tcl *tcl, const char *s, size_t len);
@@ -277,7 +279,6 @@ tcl_value_t *tcl_var(struct tcl *tcl, tcl_value_t *name, tcl_value_t *v) {
 }
 
 tcl_result_t tcl_result(struct tcl *tcl, tcl_result_t flow, tcl_value_t *result) {
-
     tcl_free(tcl->result);
     tcl->result = result;
     return flow;
@@ -290,12 +291,12 @@ tcl_result_t tcl_subst(struct tcl *tcl, const char *s, size_t len) {
     switch (s[0]) {
         case '{':
             if (len <= 1) {
-                return tcl_result(tcl, TCL_ERROR, tcl_alloc("", 0));
+                return tcl_result(tcl, TCL_ERROR, tcl_alloc("syntax error", 12));
             }
             return tcl_result(tcl, TCL_OK, tcl_alloc(s + 1, len - 2));
         case '$': {
             if (len >= MAX_VAR_LENGTH) {
-                return tcl_result(tcl, TCL_ERROR, tcl_alloc("", 0));
+                return tcl_result(tcl, TCL_ERROR, tcl_alloc("too long", 8));
             }
             char buf[5 + MAX_VAR_LENGTH] = "set ";
             strncat(buf, s + 1, len - 1);
@@ -319,7 +320,7 @@ tcl_result_t tcl_eval(struct tcl *tcl, const char *s, size_t len) {
         switch (p.token) {
             case TOK_ERROR:
                 tcl_list_free(list); tcl_free(cur);
-                return tcl_result(tcl, TCL_ERROR, tcl_alloc("", 0));
+                return tcl_result(tcl, TCL_ERROR, tcl_alloc("syntax error", 12));
             case TOK_WORD:
                 if (cur != NULL) {
                     tcl_subst(tcl, p.from, p.to - p.from);
@@ -348,7 +349,9 @@ tcl_result_t tcl_eval(struct tcl *tcl, const char *s, size_t len) {
                     for (cmd = tcl->cmds; cmd != NULL; cmd = cmd->next) {
                         if (strcmp(tcl_string(cmdname), tcl_string(cmd->name)) == 0) {
                             if (cmd->arity != 0 && cmd->arity != tcl_list_length(list)) r = cmd->fn(tcl, list, cmd->arg);
-                            else r = TCL_ERROR;
+                            else {
+                                r = tcl_result(tcl, TCL_ERROR, tcl_alloc("arity mismatch", 14))
+                            }
                             break;
                         }
                     }
@@ -372,8 +375,7 @@ tcl_result_t tcl_eval(struct tcl *tcl, const char *s, size_t len) {
 /* --------------------------------- */
 /* --------------------------------- */
 /* --------------------------------- */
-void tcl_register(struct tcl *tcl, const char *name, tcl_cmd_fn_t fn, int arity,
-                                    void *arg) {
+void tcl_register(struct tcl *tcl, const char *name, tcl_cmd_fn_t fn, int arity, void *arg = NULL) {
     struct tcl_cmd *cmd = malloc(sizeof(struct tcl_cmd));
     cmd->name = tcl_alloc(name, strlen(name));
     cmd->fn = fn;
@@ -399,16 +401,6 @@ static tcl_result_t tcl_cmd_subst(struct tcl *tcl, tcl_value_t *args, void *arg)
     tcl_free(s);
     return r;
 }
-
-#ifndef TCL_DISABLE_PUTS
-static tcl_result_t tcl_cmd_puts(struct tcl *tcl, tcl_value_t *args, void *arg) {
-    (void)arg;
-    tcl_value_t *text = tcl_list_at(args, 1);
-    puts(tcl_string(text));
-    putchar('\n');
-    return tcl_result(tcl, TCL_OK, text);
-}
-#endif
 
 static tcl_result_t tcl_user_proc(struct tcl *tcl, tcl_value_t *args, void *arg) {
     tcl_value_t *code = (tcl_value_t *)arg;
@@ -499,39 +491,38 @@ static tcl_result_t tcl_cmd_while(struct tcl *tcl, tcl_value_t *args, void *arg)
         }
         int r = tcl_eval(tcl, tcl_string(loop), tcl_length(loop) + 1);
         switch (r) {
-        case TCL_BREAK:
-            tcl_free(cond);
-            tcl_free(loop);
-            return TCL_OK;
-        case TCL_RETURN:
-            tcl_free(cond);
-            tcl_free(loop);
-            return TCL_RETURN;
-        case TCL_AGAIN:
-            continue;
-        case TCL_ERROR:
-            tcl_free(cond);
-            tcl_free(loop);
-            return TCL_ERROR;
+            case TCL_BREAK:
+                tcl_free(cond);
+                tcl_free(loop);
+                return TCL_OK;
+            case TCL_RETURN:
+            case TCL_ERROR:
+                tcl_free(cond);
+                tcl_free(loop);
+                return r;
+            case TCL_AGAIN:
+                continue;
         }
     }
+}
+
+static tcl_result_t tcl_cmd_comment(struct tcl *tcl, tcl_value_t *args, void *arg) {
+    (void)tcl, (void)arg, (void)args;
 }
 
 void tcl_init(struct tcl *tcl) {
     tcl->env = tcl_env_alloc(NULL);
     tcl->result = tcl_alloc("", 0);
     tcl->cmds = NULL;
-    tcl_register(tcl, "set", tcl_cmd_set, 0, NULL);
-    tcl_register(tcl, "subst", tcl_cmd_subst, 2, NULL);
-#ifndef TCL_DISABLE_PUTS
-    tcl_register(tcl, "puts", tcl_cmd_puts, 2, NULL);
-#endif
-    tcl_register(tcl, "proc", tcl_cmd_proc, 4, NULL);
-    tcl_register(tcl, "if", tcl_cmd_if, 0, NULL);
-    tcl_register(tcl, "while", tcl_cmd_while, 3, NULL);
-    tcl_register(tcl, "return", tcl_cmd_flow, 0, NULL);
-    tcl_register(tcl, "break", tcl_cmd_flow, 1, NULL);
-    tcl_register(tcl, "continue", tcl_cmd_flow, 1, NULL);
+    tcl_register(tcl, "set", tcl_cmd_set, 0);
+    tcl_register(tcl, "subst", tcl_cmd_subst, 2);
+    tcl_register(tcl, "proc", tcl_cmd_proc, 4);
+    tcl_register(tcl, "if", tcl_cmd_if, 0);
+    tcl_register(tcl, "while", tcl_cmd_while, 3);
+    tcl_register(tcl, "return", tcl_cmd_flow, 0);
+    tcl_register(tcl, "break", tcl_cmd_flow, 1);
+    tcl_register(tcl, "continue", tcl_cmd_flow, 1);
+    tcl_register(tcl, "#", tcl_cmd_comment, 0);
 }
 
 void tcl_destroy(struct tcl *tcl) {
@@ -549,6 +540,7 @@ void tcl_destroy(struct tcl *tcl) {
 }
 
 #include "tcl_math.h"
+#include "tcl_io.h"
 
 /*
 
@@ -603,3 +595,5 @@ int main() {
     return 0;
 }
 */
+
+#endif
