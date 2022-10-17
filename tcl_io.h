@@ -6,6 +6,7 @@
 /* File Identifier format:
 SDCard File: 0x1C + 4 bytes pointer to file object
 Serial port: 0x11 + port number
+SPI port:    0x12
 
 */
 
@@ -45,31 +46,44 @@ static tcl_result_t tcl_cmd_puts(struct tcl *tcl, tcl_value_t *args, void *arg) 
             else Serial.print(tcl_string(text));
         }
     }
+    else if (text[0] == 0x12) { // ASCII Device Control 2 ==> SPI port
+        tcl_free(text);
+        text = tcl_list_at(args, i + 1);
+        SPI.transfer(tcl_string(text), tcl_length(text));
+    }
     else {
         // default to serial
         if (newline) Serial.println(tcl_string(text));
         else Serial.print(tcl_string(text));
     }
+    tcl_free(text);
     return tcl_result(tcl, TCL_OK, text);
 }
 
 static tcl_result_t tcl_cmd_open(struct tcl *tcl, tcl_value_t *args, void *arg) {
     tcl_value_t *filename = tcl_list_at(args, 1);
     if (strcmp(filename, "/dev/serial") == 0 || strcmp(filename, "/dev/serial0") == 0) {
-        int baud = (int)tcl_num(tcl_list_at(args, 2));
+        tcl_value_t *bauds = tcl_list_at(args, 2);
+        int baud = (int)tcl_num(bauds);
         if (baud == 0) baud = 9600;
         Serial.begin(baud);
-        tcl_free(args);
+        tcl_free(bauds);
         tcl_free(filename);
         return tcl_result(tcl, TCL_OK, tcl_alloc("\x11\x30", 2)); // \x30 is ASCII '0'
     }
     if (strcmp(filename, "/dev/serial1") == 0) {
-        int baud = (int)tcl_num(tcl_list_at(args, 2));
+        tcl_value_t *bauds = tcl_list_at(args, 2);
+        int baud = (int)tcl_num(bauds);
         if (baud == 0) baud = 9600;
         Serial1.begin(baud);
-        tcl_free(args);
+        tcl_free(bauds);
         tcl_free(filename);
-        return tcl_result(tcl, TCL_OK, tcl_alloc("\x11\x31", 2)); // \x30 is ASCII '1'
+        return tcl_result(tcl, TCL_OK, tcl_alloc("\x11\x31", 2)); // \x31 is ASCII '1'
+    }
+    if (strcmp(filename, "/dev/spi") == 0) {
+        SPI.begin();
+        tcl_free(filename);
+        return tcl_result(tcl, TCL_OK, tcl_alloc("\x12", 1));
     }
     // it's a filename
     int mode = FILE_READ;
@@ -92,12 +106,19 @@ static tcl_result_t tcl_cmd_open(struct tcl *tcl, tcl_value_t *args, void *arg) 
 
 static tcl_result_t tcl_cmd_close(struct tcl *tcl, tcl_value_t *args, void *arg) {
     tcl_value_t fd = tcl_list_at(args, 0);
-    if (fd[0] != 0x11) { // Serial ports do not need to be closed
-        uintptr_t fp = (uintptr_t)*(fd + 1);
-        File f = (File)*fp;
-        f.close();
-        free(f);
+    if (fd[0] == 0x11) { // Serial ports do not need to be closed
+        tcl_free(fd);
+        return tcl_result(tcl, TCL_OK, tcl_alloc("", 0));
     }
+    if (fd[0] == 0x12) {
+        SPI.end();
+        tcl_free(fd);
+        return tcl_result(tcl, TCL_OK, tcl_alloc("", 0));
+    }
+    uintptr_t fp = (uintptr_t)*(fd + 1);
+    File f = (File)*fp;
+    f.close();
+    free(f);
     tcl_free(fd);
     return tcl_result(tcl, TCL_OK, tcl_alloc("", 0));
 }

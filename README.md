@@ -39,8 +39,9 @@ continue
 ```tcl
 open stream ?details?
 # 2 serial ports are setup as /dev/serial0 and /dev/serial1 -- take baud rate
+# SPI port is setup as /dev/spi -- takes nothing
 # other files on SD card -- take "r" for read and "w" for write
-puts ?stream? string
+puts ?-nonewline? ?stream? string
 # if no stream specified uses /dev/serial (which is default serial port)
 close stream
 # closing a serial port is a noop
