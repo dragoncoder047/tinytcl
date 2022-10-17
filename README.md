@@ -93,6 +93,7 @@ void loop() {
             if (p.token == TOK_ERROR && (p.to - buf) != i) {
                 memset(buf, 0, buflen);
                 i = 0;
+                Serial.println("Syntax error");
                 break;
             } else if (p.token == TOK_COMMAND && *(p.from) != '\0') {
                 tcl_result_t r = tcl_eval(&tcl, buf, strlen(buf));
