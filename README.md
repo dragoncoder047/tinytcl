@@ -49,3 +49,64 @@ read stream ?amount?
 close stream
 # closing a serial port is a noop
 ```
+
+## Arduino usage
+
+From an SD card:
+
+```cpp
+#include <SD.h>
+#include "tinytcl.h"
+struct tcl tcl;
+void setup() {
+    // other setup code
+    SD.begin();
+    File f = SD.open("main.tcl");
+    int a = f.available();
+    tcl_value_t *s = malloc(a);
+    f.readBytes(s, a);
+
+    tcl_init(&tcl);
+    tcl_result_t r = tcl_eval(&tcl, s, a);
+    // now do something with tcl.result and r
+}
+```
+
+Interactive Serial REPL:
+
+```cpp
+#include <stdlib.h>
+#include "tinytcl.h"
+#define CHUNK 64
+void loop() {
+    struct tcl tcl;
+    int buflen = CHUNK;
+    char *buf = malloc(buflen);
+    int i = 0;
+    tcl_init(&tcl);
+    while (true) {
+        char inp = Serial.read();
+        if (i > buflen - 1) buf = realloc(buf, buflen += CHUNK);
+        if (inp == 0 || inp == -1) continue;
+        buf[i++] = inp;
+        tcl_each(buf, i, true) {
+            if (p.token == TOK_ERROR && (p.to - buf) != i) {
+                memset(buf, 0, buflen);
+                i = 0;
+                break;
+            } else if (p.token == TOK_COMMAND && *(p.from) != '\0') {
+                tcl_result_t r = tcl_eval(&tcl, buf, strlen(buf));
+                if (r != TCL_ERROR) {
+                    Serial.print("result> ");
+                } else {
+                    Serial.print("?! ");
+                }
+                Serial.println(tcl_string(tcl.result));
+                memset(buf, 0, buflen);
+                i = 0;
+                break;
+            }
+        }
+    }
+}
+```
