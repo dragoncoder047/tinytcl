@@ -531,10 +531,6 @@ static tcl_result_t tcl_cmd_while(struct tcl *tcl, tcl_string_t *args, void *arg
     }
 }
 
-#ifndef TCL_DISABLE_MATH
-
-#endif
-
 void tcl_init(struct tcl *tcl) {
     tcl->env = tcl_env_alloc(NULL);
     tcl->result = tcl_alloc("", 0);
@@ -550,8 +546,6 @@ void tcl_init(struct tcl *tcl) {
     tcl_register(tcl, "return", tcl_cmd_flow, 0x01, NULL);
     tcl_register(tcl, "break", tcl_cmd_flow, 0x00, NULL);
     tcl_register(tcl, "continue", tcl_cmd_flow, 0x00, NULL);
-#ifndef TCL_DISABLE_MATH
-#endif
 }
 
 void tcl_destroy(struct tcl *tcl) {
