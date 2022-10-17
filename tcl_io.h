@@ -118,6 +118,7 @@ static tcl_result_t tcl_cmd_open(struct tcl *tcl, tcl_value_t *args, void *arg) 
         tcl_free(filename);
         return tcl_result(tcl, TCL_OK, tcl_alloc("\x11\x30", 2)); // \x30 is ASCII '0'
     }
+#ifdef Serial1
     if (strcmp(filename, "/dev/serial1") == 0) {
         tcl_value_t *bauds = tcl_list_at(args, 2);
         int baud = (int)tcl_num(bauds);
@@ -127,6 +128,7 @@ static tcl_result_t tcl_cmd_open(struct tcl *tcl, tcl_value_t *args, void *arg) 
         tcl_free(filename);
         return tcl_result(tcl, TCL_OK, tcl_alloc("\x11\x31", 2)); // \x31 is ASCII '1'
     }
+#endif
 #ifdef Serial2
     if (strcmp(filename, "/dev/serial2") == 0) {
         tcl_value_t *bauds = tcl_list_at(args, 2);
