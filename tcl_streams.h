@@ -173,12 +173,7 @@ static tcl_result_t tcl_cmd_open(struct tcl *tcl, tcl_value_t *args, void *arg) 
 
 static tcl_result_t tcl_cmd_close(struct tcl *tcl, tcl_value_t *args, void *arg) {
     tcl_value_t fd = tcl_list_at(args, 0);
-    if (fd[0] == 0x11) { // Serial ports do not need to be closed
-        tcl_free(fd);
-        return tcl_result(tcl, TCL_OK, tcl_alloc("", 0));
-    }
-    if (fd[0] == 0x12) {
-        SPI.end();
+    if (fd[0] == 0x11 || fd[0] == 0x12) { // Serial ports can't be closed; SPI can but shouldn't (would mess up SD card)
         tcl_free(fd);
         return tcl_result(tcl, TCL_OK, tcl_alloc("", 0));
     }
