@@ -541,7 +541,7 @@ void tcl_init(struct tcl *tcl) {
     tcl_register(tcl, "continue", tcl_cmd_flow, 1);
     tcl_register(tcl, "#", tcl_cmd_comment, 0);
     tcl_init_math(tcl);
-    tcl_init_io(tcl);
+    tcl_init_streams(tcl);
 }
 
 /*

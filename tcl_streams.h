@@ -185,7 +185,7 @@ static tcl_result_t tcl_cmd_close(struct tcl *tcl, tcl_value_t *args, void *arg)
     return tcl_result(tcl, TCL_OK, tcl_alloc("", 0));
 }
 
-void tcl_init_io(struct tcl *tcl) {
+void tcl_init_streams(struct tcl *tcl) {
     tcl_register(tcl, "puts", tcl_cmd_puts, 0);
     tcl_register(tcl, "open", tcl_cmd_open, 0);
     tcl_register(tcl, "close", tcl_cmd_close, 2);
