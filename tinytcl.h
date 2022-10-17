@@ -360,7 +360,7 @@ tcl_result_t tcl_eval(struct tcl *tcl, const char *s, size_t len) {
                         if (strcmp(tcl_string(cmdname), tcl_string(cmd->name)) == 0) {
                             int min = cmd->arity >> 4;
                             int max = cmd->arity & 0x0F;
-                            int len = tcl_list_length(list);
+                            int len = tcl_list_length(list) - 1; // First element is command
                             if (len >= min && (max == 0x0F || len <= max)) r = cmd->fn(tcl, list, cmd->arg);
                             else r = TCL_ERROR;
                             break;
@@ -539,17 +539,17 @@ void tcl_init(struct tcl *tcl) {
     tcl->env = tcl_env_alloc(NULL);
     tcl->result = tcl_alloc("", 0);
     tcl->cmds = NULL;
-    tcl_register(tcl, "set", tcl_cmd_set, 0, NULL);
-    tcl_register(tcl, "subst", tcl_cmd_subst, 2, NULL);
+    tcl_register(tcl, "set", tcl_cmd_set, 0x12, NULL);
+    tcl_register(tcl, "subst", tcl_cmd_subst, 0x11, NULL);
 #ifndef TCL_DISABLE_PUTS
-    tcl_register(tcl, "puts", tcl_cmd_puts, 2, NULL);
+    tcl_register(tcl, "puts", tcl_cmd_puts, 0x1F, NULL);
 #endif
-    tcl_register(tcl, "proc", tcl_cmd_proc, 4, NULL);
-    tcl_register(tcl, "if", tcl_cmd_if, 0, NULL);
-    tcl_register(tcl, "while", tcl_cmd_while, 3, NULL);
-    tcl_register(tcl, "return", tcl_cmd_flow, 0, NULL);
-    tcl_register(tcl, "break", tcl_cmd_flow, 1, NULL);
-    tcl_register(tcl, "continue", tcl_cmd_flow, 1, NULL);
+    tcl_register(tcl, "proc", tcl_cmd_proc, 0x33, NULL);
+    tcl_register(tcl, "if", tcl_cmd_if, 0x2F, NULL);
+    tcl_register(tcl, "while", tcl_cmd_while, 0x22, NULL);
+    tcl_register(tcl, "return", tcl_cmd_flow, 0x01, NULL);
+    tcl_register(tcl, "break", tcl_cmd_flow, 0x00, NULL);
+    tcl_register(tcl, "continue", tcl_cmd_flow, 0x00, NULL);
 #ifndef TCL_DISABLE_MATH
 #endif
 }

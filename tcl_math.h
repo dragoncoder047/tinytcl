@@ -1,9 +1,9 @@
-static tcl_result_t tcl_cmd_math(struct tcl *tcl, tcl_value_t *args, void *arg) {
+static tcl_result_t tcl_cmd_math(struct tcl *tcl, tcl_string_t *args, void *arg) {
     (void)arg;
     char buf[64];
-    tcl_value_t *opval = tcl_list_at(args, 0);
-    tcl_value_t *aval = tcl_list_at(args, 1);
-    tcl_value_t *bval = tcl_list_at(args, 2);
+    tcl_string_t *opval = tcl_list_at(args, 0);
+    tcl_string_t *aval = tcl_list_at(args, 1);
+    tcl_string_t *bval = tcl_list_at(args, 2);
     const char *op = tcl_string(opval);
     int a = tcl_int(aval);
     int b = tcl_int(bval);
@@ -39,6 +39,6 @@ static tcl_result_t tcl_cmd_math(struct tcl *tcl, tcl_value_t *args, void *arg) 
 void tcl_init_math(struct tcl *tcl) {
     char *math[] = {"+", "-", "*", "/", ">", ">=", "<", "<=", "==", "!="};
     for (unsigned int i = 0; i < (sizeof(math) / sizeof(math[0])); i++) {
-        tcl_register(tcl, math[i], tcl_cmd_math, 3, NULL);
+        tcl_register(tcl, math[i], tcl_cmd_math, 0x22, NULL);
     }
 }
