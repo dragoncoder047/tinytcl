@@ -6,9 +6,9 @@ static tcl_result_t tcl_cmd_math(struct tcl *tcl, tcl_value_t *args, void *arg) 
     tcl_value_t *bval = tcl_list_at(args, 2);
     const char *op = tcl_string(opval);
     int opnum = op[0] << 8 | op[1];
-    int a = tcl_int(aval);
-    int b = tcl_int(bval);
-    int c = 0;
+    float a = tcl_num(aval);
+    float b = tcl_num(bval);
+    float c = 0;
     switch (opnum) {
         case 0x2b00: c = a + b; break;
         case 0x2d00: c = a - b; break;
@@ -21,7 +21,7 @@ static tcl_result_t tcl_cmd_math(struct tcl *tcl, tcl_value_t *args, void *arg) 
         case 0x3d3d: c = a == b; break;
         case 0x213d: c = a != b; break;
     }
-    sprintf(buf, "%d", c);
+    sprintf(buf, "%f", c);
     tcl_free(opval);
     tcl_free(aval);
     tcl_free(bval);

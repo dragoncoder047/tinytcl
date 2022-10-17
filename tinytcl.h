@@ -114,7 +114,7 @@ struct tcl_parser {
 typedef char tcl_value_t;
 
 const char *tcl_string(tcl_value_t *v) { return v; }
-int tcl_int(tcl_value_t *v) { return atoi(v); }
+float tcl_num(tcl_value_t *v) { float x; sscanf(v, "%f", &x); return x; }
 int tcl_length(tcl_value_t *v) { return v == NULL ? 0 : strlen(v); }
 
 void tcl_free(tcl_value_t *v) { free(v); }
@@ -176,11 +176,11 @@ tcl_value_t *tcl_list_append(tcl_value_t *v, tcl_value_t *tail) {
         v = tcl_append(v, tcl_alloc(" ", 2));
     }
     if (tcl_length(tail) > 0) {
-        int q = 0;
+        bool q = false;
         const char *p;
         for (p = tcl_string(tail); *p; p++) {
             if (tcl_is_space(*p) || tcl_is_special(*p, 0)) {
-                q = 1;
+                q = true;
                 break;
             }
         }
@@ -453,7 +453,7 @@ static tcl_result_t tcl_cmd_if(struct tcl *tcl, tcl_value_t *args, void *arg) {
             tcl_free(branch);
             break;
         }
-        if (tcl_int(tcl->result)) {
+        if (tcl_num(tcl->result) > 0) {
             r = tcl_eval(tcl, tcl_string(branch), tcl_length(branch) + 1);
             tcl_free(branch);
             break;
@@ -492,7 +492,7 @@ static tcl_result_t tcl_cmd_while(struct tcl *tcl, tcl_value_t *args, void *arg)
             tcl_free(loop);
             return r;
         }
-        if (!tcl_int(tcl->result)) {
+        if (tcl_num(tcl->result) == 0) {
             tcl_free(cond);
             tcl_free(loop);
             return TCL_OK;
