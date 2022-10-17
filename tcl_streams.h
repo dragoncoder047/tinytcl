@@ -108,6 +108,7 @@ static tcl_result_t tcl_cmd_read(struct tcl *tcl, tcl_value_t *args, void *arg) 
 }
 
 static tcl_result_t tcl_cmd_open(struct tcl *tcl, tcl_value_t *args, void *arg) {
+    (void)arg;
     tcl_value_t *filename = tcl_list_at(args, 1);
     if (strcmp(filename, "/dev/serial") == 0 || strcmp(filename, "/dev/serial0") == 0) {
         tcl_value_t *bauds = tcl_list_at(args, 2);
@@ -172,6 +173,7 @@ static tcl_result_t tcl_cmd_open(struct tcl *tcl, tcl_value_t *args, void *arg) 
 }
 
 static tcl_result_t tcl_cmd_close(struct tcl *tcl, tcl_value_t *args, void *arg) {
+    (void)arg;
     tcl_value_t fd = tcl_list_at(args, 0);
     if (fd[0] == 0x11 || fd[0] == 0x12) { // Serial ports can't be closed; SPI can but shouldn't (would mess up SD card)
         tcl_free(fd);
