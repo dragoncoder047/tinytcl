@@ -112,19 +112,20 @@ struct tcl_parser {
 /* ------------------------------------------------------- */
 typedef char tcl_string_t;
 
-typedef tcl_result_t (*tcl_cmd_fn_t)(struct tcl *, tcl_string_t *, void *);
-
 enum tcl_type { TYPE_STRING, TYPE_NUMBER, TYPE_LIST };
 
 struct tcl_value_t {
     tcl_string_t *name;
     tcl_type type;
     union {
-        tcl_string_t value;
-        struct tcl_value_t values;
+        tcl_string_t *value;
+        struct tcl_value_t *values;
         int number;
     }
+    tcl_value_t *next;
 };
+
+typedef tcl_result_t (*tcl_cmd_fn_t)(struct tcl *, tcl_string_t *, void *);
 
 struct tcl_cmd {
     tcl_string_t *name;
