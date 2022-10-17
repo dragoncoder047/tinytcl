@@ -526,6 +526,7 @@ void tcl_destroy(struct tcl *tcl) {
 
 #include "tcl_math.h"
 #include "tcl_streams.h"
+#include "tcl_arduino.h"
 
 void tcl_init(struct tcl *tcl) {
     tcl->env = tcl_env_alloc(NULL);
@@ -542,6 +543,7 @@ void tcl_init(struct tcl *tcl) {
     tcl_register(tcl, "#", tcl_cmd_comment, 0);
     tcl_init_math(tcl);
     tcl_init_streams(tcl);
+    tcl_init_arduino(tcl);
 }
 
 #endif

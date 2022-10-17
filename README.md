@@ -50,6 +50,18 @@ close stream
 # closing a serial port is a noop
 ```
 
+### Pins
+
+```tcl
+# check arduino core files for numbering of analog pins
+pin mode -i|-o|-iu|-id pinnum
+# sets pin mode: input, output, input-pullup, input-pulldown (if supported)
+pin read -a|-d|-t pinnum
+# reads pin value: analog, digital, touch (if supported)
+pin write -a|-d pinnum value
+# writes value to pin: analog or digital
+```
+
 ## Arduino usage
 
 From an SD card:
