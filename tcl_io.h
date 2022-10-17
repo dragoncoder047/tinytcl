@@ -91,11 +91,7 @@ static tcl_result_t tcl_cmd_open(struct tcl *tcl, tcl_value_t *args, void *arg) 
     if (strcmp(m, "w") == 0) mode = FILE_WRITE;
     tcl_free(m);
     File f = SD.open(tcl_string(filename), mode);
-    if (!f) {
-        char buffer[128];
-        sprintf(buffer, "file not found: %s", tcl_string(filename));
-        return tcl_result(tcl, TCL_ERROR, tcl_alloc(buffer, strlen(buffer)));
-    }
+    if (!f) return tcl_result(tcl, TCL_ERROR, tcl_alloc("file not found", 14));
     char out[5];
     uintptr_t fp = &f;
     out[0] = 0x1C;
